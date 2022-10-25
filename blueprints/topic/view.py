@@ -4,7 +4,7 @@
 from flask import jsonify
 from . import topic_bp
 from flask_restful import Resource,Api
-
+from models import TopicModel
 # @topic_bp.route('/')
 # def index():
 #     return jsonify(u"这是topic首页")
