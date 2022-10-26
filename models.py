@@ -14,33 +14,33 @@ TypeId  = {
 }
 
 # flask-login实现登录需要User类继承UserMixin
-class User(UserMixin):
-    def __init__(self, user):
-        self.password = user.password
-        self.id = user.id
-        self.username = user.username
-        self.role_id = user.role_id
-
-    def get(user_id):
-        """根据用户ID获取用户实体，为 login_user 方法提供支持"""
-        if not user_id:
-            return None
-        user = User.query.filter_by(id=user_id).first()
-        if user:
-            return User(user)
-        return None
-
-    def has_role(self, role_name):
-        role = Role.query.filter_by(id=self.role_id).first()
-        if role.name == role_name:
-            return True
-        else:
-            return False
-
-
-class AnonymousUser(AnonymousUserMixin):
-    def has_role(self, role_name):
-        return False
+# class User(UserMixin):
+#     def __init__(self, user):
+#         self.password = user.password
+#         self.id = user.id
+#         self.username = user.username
+#         self.role_id = user.role_id
+#
+#     def get(user_id):
+#         """根据用户ID获取用户实体，为 login_user 方法提供支持"""
+#         if not user_id:
+#             return None
+#         user = User.query.filter_by(id=user_id).first()
+#         if user:
+#             return User(user)
+#         return None
+#
+#     def has_role(self, role_name):
+#         role = Role.query.filter_by(id=self.role_id).first()
+#         if role.name == role_name:
+#             return True
+#         else:
+#             return False
+#
+#
+# class AnonymousUser(AnonymousUserMixin):
+#     def has_role(self, role_name):
+#         return False
 
 
 class UserModel(db.Model,UserMixin):
@@ -60,6 +60,7 @@ class UserModel(db.Model,UserMixin):
 
     def __repr__(self):
         return " %s" % self.username
+
 
     def subscribe(self,topic):
         pass

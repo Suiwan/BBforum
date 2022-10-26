@@ -42,6 +42,9 @@ def register_database(app):
 def register_errors(app):
     pass
 
+
 def register_extensions(app):
     from app.extensions import cors
     cors.init_app(app,resources={r'/*': {'origins': '*'}})# 跨域资源请求
+    from app.extensions import login_manager
+    login_manager.init_app(app) # 管理用户登录和认证
