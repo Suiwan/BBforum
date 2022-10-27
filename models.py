@@ -52,11 +52,11 @@ class UserModel(db.Model,UserMixin):
 
     # relationships
     roles = db.relationship('Role', backref=db.backref('users', lazy='dynamic'))# 身份权限
-    posts = db.relationship('PostModel', backref='author') # 发布的帖子
-    likes = db.relationship('LikesModel', backref='user')# 点赞的帖子
-    topics = db.relationship('TopicModel', backref='author')# 建立的话题
-    responses = db.relationship('ResponseModel', backref='author')# 回复
-    subscriptions = db.relationship('SubscriptionsModel',backref='user')
+    posts = db.relationship('PostModel', backref='author',cascade="all,delete") # 发布的帖子
+    likes = db.relationship('LikesModel', backref='user',cascade="all,delete")# 点赞的帖子
+    topics = db.relationship('TopicModel', backref='author',cascade="all,delete")# 建立的话题
+    responses = db.relationship('ResponseModel', backref='author',cascade="all,delete")# 回复
+    subscriptions = db.relationship('SubscriptionsModel',backref='user',cascade="all,delete")
 
     def __repr__(self):
         return " %s" % self.username
@@ -92,17 +92,17 @@ class TopicModel(db.Model):
     id = db.Column(db.Integer,primary_key=True,autoincrement=True)
     theme = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(200), nullable=False)
-    type_id = db.Column(db.String(200), nullable=False)
+    type_id = db.Column(db.Integer, nullable=False)
     img_urls = db.Column(db.String(200))
     video_urls = db.Column(db.String(200))
-    creat_time = db.Column(db.DateTime, default=datetime.now)
+    create_time = db.Column(db.DateTime, default=datetime.now)
     update_time = db.Column(db.DateTime, default=datetime.now)
 
     # ForeignKeys:
     author_id = db.Column(db.String(200),db.ForeignKey('user.id'),nullable=False)
 
     # relationships:
-    posts = db.relationship('PostModel',backref='topic')
+    posts = db.relationship('PostModel',backref='topic',cascade="all,delete")
 
 
 class PostModel(db.Model):
@@ -110,7 +110,6 @@ class PostModel(db.Model):
     id = db.Column(db.Integer,primary_key=True,autoincrement=True)
     title = db.Column(db.String(200), nullable=False)
     text = db.Column(db.String(511), nullable=False)
-    type_id = db.Column(db.String(200), nullable=False)
     creat_time = db.Column(db.DateTime, default=datetime.now)
     update_time = db.Column(db.DateTime, default=datetime.now)
     img_urls = db.Column(db.String(200))
@@ -121,7 +120,7 @@ class PostModel(db.Model):
     topic_id = db.Column(db.Integer,db.ForeignKey('topic.id'), nullable=False)
 
     # relationships:
-    responses = db.relationship('ResponseModel',backref='post')
+    responses = db.relationship('ResponseModel',backref='post',cascade="all,delete")
 
 
 class ResponseModel(db.Model):

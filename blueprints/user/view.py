@@ -68,7 +68,7 @@ user_api = Api(user_bp)
 class UserView(Resource):
     resource_fields = {
         'username': fields.String,
-        'id':fields.String,
+        'id': fields.String,
         'role_id': fields.Integer
     }
 
