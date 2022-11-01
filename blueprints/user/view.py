@@ -3,7 +3,7 @@
 # @Time    : 2022/10/19 19:08
 from flask import jsonify,request
 from . import user_bp
-from flask_restful import Resource,marshal_with,fields
+from flask_restful import Resource,marshal_with,fields,Api
 from models import UserModel
 from models import UserModel,LikesModel
 from flask_login import login_user,login_required,logout_user,current_user
@@ -52,6 +52,7 @@ def logout():
         'msg':'logout sucess'
     })
 
+
 @user_bp.route('/like')
 @login_required
 def like():
@@ -61,7 +62,6 @@ def like():
 
 
 
-from flask_restful import Api
 user_api = Api(user_bp)
 
 
@@ -70,20 +70,18 @@ class UserView(Resource):
         'username': fields.String,
         'id': fields.String,
         'role_id': fields.Integer
+        # 'subscriptions':fields.List,
+        # 'likes':fields.List
     }
 
     @marshal_with(resource_fields)
     def get(self, id):
         user = UserModel.query.get(id)
-        # return jsonify({
-        #     'code':200,
-        #     'msg':'success',
-        #     'data':user
-        # })
         return user
 
     def delete(self,id):
         return jsonify(u"删除成功")
 
 
-user_api.add_resource(UserView, '/hello/<string:id>')
+
+user_api.add_resource(UserView, '/user/<string:id>')

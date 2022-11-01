@@ -6,7 +6,7 @@ from datetime import datetime
 from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy import ForeignKey
 
-TypeId  = {
+TypeId = {
     1:"课程答疑",
     2:"资源共享",
     3:"评价反馈",
@@ -61,6 +61,11 @@ class UserModel(db.Model,UserMixin):
     def __repr__(self):
         return " %s" % self.username
 
+    def to_json(self):
+        dict = self.__dict__
+        if "_sa_instance_state" in dict:
+            del dict["_sa_instance_state"]
+        return dict
 
     def subscribe(self,topic):
         pass
@@ -104,6 +109,12 @@ class TopicModel(db.Model):
     # relationships:
     posts = db.relationship('PostModel',backref='topic',cascade="all,delete")
 
+    def to_json(self):
+        dict = self.__dict__
+        if "_sa_instance_state" in dict:
+            del dict["_sa_instance_state"]
+        return dict
+
 
 class PostModel(db.Model):
     __tablename__ = "post"
@@ -122,6 +133,13 @@ class PostModel(db.Model):
     # relationships:
     responses = db.relationship('ResponseModel',backref='post',cascade="all,delete")
 
+    def to_json(self):
+        dict = self.__dict__
+        if "_sa_instance_state" in dict:
+            del dict["_sa_instance_state"]
+        return dict
+
+
 
 class ResponseModel(db.Model):
     __tablename__ = "response"
@@ -134,6 +152,12 @@ class ResponseModel(db.Model):
     # ForeignKeys:
     author_id = db.Column(db.String(200), db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer,db.ForeignKey('post.id'), nullable=False)
+
+    def to_json(self):
+        dict = self.__dict__
+        if "_sa_instance_state" in dict:
+            del dict["_sa_instance_state"]
+        return dict
 
 
 class LikesModel(db.Model):
@@ -159,5 +183,18 @@ class SubscriptionsModel(db.Model):
     topic = db.relationship("TopicModel",backref='user_subscribed') # `这条点赞对应的帖子('user_subscribed'代表关注话题的所有人)
 
 
-
+def model_to_dict(result):
+    from collections import Iterable
+    try:
+        if isinstance(result, Iterable):
+            tmp = [dict(zip(res.__dict__.keys(), res.__dict__.values())) for res in result]
+            for t in tmp:
+                t.pop('_sa_instance_state')
+        else:
+            tmp = dict(zip(result.__dict__.keys(), result.__dict__.values()))
+            tmp.pop('_sa_instance_state')
+        return tmp
+    except BaseException as e:
+        print(e.args)
+        raise TypeError('Type error of parameter')
 

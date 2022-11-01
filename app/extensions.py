@@ -15,3 +15,6 @@ def load_user(user_id): # 调用current_user时会调用load_user，若已经登
     from models import UserModel
     user = UserModel.query.filter_by(id=user_id).first()
     return user
+
+
+

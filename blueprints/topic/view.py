@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 # @Author  : Zijian li
 # @Time    : 2022/10/19 19:25
+import datetime
+from datetime import timezone
 from flask import jsonify
 from . import topic_bp
-from flask_restful import Resource,Api,marshal_with,fields
-from models import TopicModel
+from flask_restful import Resource,Api,marshal_with,fields,request
+from models import TopicModel,model_to_dict
 from app.extensions import db
-# @topic_bp.route('/')
-# def index():
-#     return jsonify(u"这是topic首页")
+
+
+@topic_bp.route('/posts/<int:topic_id>',methods=['GET'])
+def get_posts(topic_id):
+    topic = TopicModel.query.filter_by(id=topic_id).first()
+    posts = model_to_dict(topic.posts)
+    return posts
 
 
 # 注册topic api
 topic_api = Api(topic_bp)
 
-# 单个话题CURD
+
+# CURD
 class TopicView(Resource):
     resource_fields = {
         'id':fields.Integer,
@@ -38,8 +45,20 @@ class TopicView(Resource):
         topic = TopicModel.query.get(id)
         db.session.delete(topic)
         db.session.commit()
-        return jsonify(u"话题删除成功")
+        return jsonify({'code':200,
+                        'msg':"delete success"
+                        })
 
+    def put(self,id):
+        data = request.get_json()
+        data['update_time'] = datetime.datetime.now()
+        post = TopicModel.query.filter_by(id=id)
+        post.update(data)
+        db.session.commit()
+        return jsonify({
+            'code':200,
+            'msg':'update success'
+        })
 
 
 class TopicsView(Resource):
@@ -60,6 +79,22 @@ class TopicsView(Resource):
     def get(self):
         topics = TopicModel.query.all()
         return topics
+
+    def post(self):
+        data = request.get_json()
+        theme = data['theme']
+        description = data['description']
+        type_id = data['type_id']
+        img_urls = data['img_urls']
+        video_urls = data['video_urls']
+        author_id = data['author_id']
+        topic = TopicModel(theme=theme,description=description,type_id=type_id,img_urls=img_urls,video_urls=video_urls,author_id=author_id)
+        db.session.add(topic)
+        db.session.commit()
+        return jsonify({
+            'msg': 'add success',
+            'code': 200
+        })
 
 
 topic_api.add_resource(TopicView, '/<int:id>')

@@ -3,7 +3,6 @@
 # @Time    : 2022/10/27 9:53
 # 生成虚拟数据
 import random
-
 from faker import Faker
 from models import TopicModel,PostModel,UserModel
 from app.extensions import db
