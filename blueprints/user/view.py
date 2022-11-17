@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : Zijian li
 # @Time    : 2022/10/19 19:08
+
 from flask import jsonify,request
 from . import user_bp
 from flask_restful import Resource,marshal_with,fields,Api
@@ -53,12 +54,67 @@ def logout():
     })
 
 
-@user_bp.route('/like')
+@user_bp.route('/like',methods=['POST'])
 @login_required
 def like():
-    u_id = "123456"
-    user = UserModel.query.filter_by(id=u_id).first()
-    return jsonify(user.likes)
+    post_id = request.get_json()['post_id']
+    if not current_user.is_liking(post_id):
+        current_user.like(post_id)
+        return jsonify({
+            'code':200,
+            'msg':'success'
+        })
+    return jsonify({
+        'code':601,
+        'msg':'Already liked!'
+    })
+
+
+@user_bp.route('/unlike',methods=['POST'])
+@login_required
+def unlike():
+    post_id = request.get_json()['post_id']
+    if  current_user.is_liking(post_id):
+        current_user.unlike(post_id)
+        return jsonify({
+            'code':200,
+            'msg':'success'
+        })
+    return jsonify({
+        'code':601,
+        'msg':'Have not liked yet!'
+    })
+
+@user_bp.route('/subscribe',methods=['POST'])
+@login_required
+def subscribe():
+    topic_id = request.get_json()['topic_id']
+    if not current_user.is_subscribing(topic_id):
+        current_user.subscribe(topic_id)
+        return jsonify({
+            'code':200,
+            'msg':'success'
+        })
+    return jsonify({
+        'code':601,
+        'msg':'Already subscribed!'
+    })
+
+
+@user_bp.route('/unsubscribe',methods=['POST'])
+@login_required
+def unsubscribe():
+    topic_id = request.get_json()['topic_id']
+    if  current_user.is_subscribing(topic_id):
+        current_user.unsubscribe(topic_id)
+        return jsonify({
+            'code':200,
+            'msg':'success'
+        })
+    return jsonify({
+        'code':601,
+        'msg':'Have not liked yet!'
+    })
 
 
 
@@ -84,4 +140,4 @@ class UserView(Resource):
 
 
 
-user_api.add_resource(UserView, '/user/<string:id>')
+user_api.add_resource(UserView, '/user/<int:id>')

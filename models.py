@@ -53,10 +53,13 @@ class UserModel(db.Model,UserMixin):
     # relationships
     roles = db.relationship('Role', backref=db.backref('users', lazy='dynamic'))# 身份权限
     posts = db.relationship('PostModel', backref='author',cascade="all,delete") # 发布的帖子
-    likes = db.relationship('LikesModel', backref='user',cascade="all,delete")# 点赞的帖子
     topics = db.relationship('TopicModel', backref='author',cascade="all,delete")# 建立的话题
     responses = db.relationship('ResponseModel', backref='author',cascade="all,delete")# 回复
-    subscriptions = db.relationship('SubscriptionsModel',backref='user',cascade="all,delete")
+    # subscriptions = db.relationship('SubscriptionsModel',backref=db.backref('user', lazy='dynamic'),cascade="all,delete")
+    # likes = db.relationship('LikesModel', backref=db.backref('user', lazy='dynamic'), cascade="all,delete")  # 点赞的帖子
+    likes = db.relationship('LikesModel', backref='user', cascade="all,delete",lazy='dynamic')
+    subscriptions = db.relationship('SubscriptionsModel', backref='user', cascade="all,delete",lazy='dynamic')
+
 
     def __repr__(self):
         return " %s" % self.username
@@ -67,23 +70,37 @@ class UserModel(db.Model,UserMixin):
             del dict["_sa_instance_state"]
         return dict
 
-    def subscribe(self,topic):
-        pass
+    def subscribe(self,topic_id):
+        if not self.is_subscribing(topic_id):
+            sub = SubscriptionsModel(u_id = self.id,t_id = topic_id)
+            db.session.add(sub)
+            db.session.commit()
+        return self.is_subscribing(topic_id)
 
-    def unsubscribe(self,topic):
-        pass
+    def unsubscribe(self,topic_id):
+        if self.is_subscribing(topic_id):
+            sub = self.subscriptions.filter_by(t_id = topic_id).first()
+            db.session.delete(sub)
+            db.session.commit()
 
-    def is_subscribing(self,topic):
-        pass
+    def is_subscribing(self,topic_id):
+        return self.subscriptions.filter_by(t_id = topic_id).first() is not None
 
-    def like(self,post):
-        pass
+    def like(self,post_id):
+        if not self.is_liking(post_id):
+            like = LikesModel(u_id=self.id, p_id=post_id)
+            db.session.add(like)
+            db.session.commit()
+        return self.is_liking(post_id)
 
-    def unlike(self,post):
-        pass
+    def unlike(self,post_id):
+        if  self.is_liking(post_id):
+            like = self.likes.filter_by(p_id = post_id).first()
+            db.session.delete(like)
+            db.session.commit()
 
-    def is_liking(self,post):
-        pass
+    def is_liking(self,post_id):
+        return self.likes.filter_by(p_id = post_id).first() is not None
 
 
 class Role(db.Model):
@@ -98,8 +115,8 @@ class TopicModel(db.Model):
     theme = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(200), nullable=False)
     type_id = db.Column(db.Integer, nullable=False)
-    img_urls = db.Column(db.String(200))
-    video_urls = db.Column(db.String(200))
+    img_urls = db.Column(db.String(200))# split: /
+    video_urls = db.Column(db.String(200))# split: /
     create_time = db.Column(db.DateTime, default=datetime.now)
     update_time = db.Column(db.DateTime, default=datetime.now)
 
@@ -120,12 +137,11 @@ class PostModel(db.Model):
     __tablename__ = "post"
     id = db.Column(db.Integer,primary_key=True,autoincrement=True)
     title = db.Column(db.String(200), nullable=False)
-    text = db.Column(db.String(511), nullable=False)
+    text = db.Column(db.String(1024), nullable=False)
     creat_time = db.Column(db.DateTime, default=datetime.now)
     update_time = db.Column(db.DateTime, default=datetime.now)
-    img_urls = db.Column(db.String(200))
-    video_urls = db.Column(db.String(200))
-
+    img_urls = db.Column(db.String(200)) # split: /
+    video_urls = db.Column(db.String(200))# split: /
     # ForeignKeys:
     author_id = db.Column(db.String(200), db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer,db.ForeignKey('topic.id'), nullable=False)
@@ -138,7 +154,6 @@ class PostModel(db.Model):
         if "_sa_instance_state" in dict:
             del dict["_sa_instance_state"]
         return dict
-
 
 
 class ResponseModel(db.Model):
