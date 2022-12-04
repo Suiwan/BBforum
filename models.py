@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author  : Zijian li
 # @Time    : 2022/10/19 16:20
+from flask_sqlalchemy.model import Model
+
 from app.extensions import db
 from datetime import datetime
 from flask_login import UserMixin, AnonymousUserMixin
@@ -59,6 +61,8 @@ class UserModel(db.Model,UserMixin):
     # likes = db.relationship('LikesModel', backref=db.backref('user', lazy='dynamic'), cascade="all,delete")  # 点赞的帖子
     likes = db.relationship('LikesModel', backref='user', cascade="all,delete",lazy='dynamic')
     subscriptions = db.relationship('SubscriptionsModel', backref='user', cascade="all,delete",lazy='dynamic')
+    notifications = db.relationship('Notification',backref='receiver',cascade="all,delete")
+
 
 
     def __repr__(self):
@@ -195,7 +199,7 @@ class SubscriptionsModel(db.Model):
     t_id = db.Column(db.Integer, ForeignKey("topic.id", ondelete="CASCADE"))
 
     # relationships
-    topic = db.relationship("TopicModel",backref='user_subscribed') # `这条点赞对应的帖子('user_subscribed'代表关注话题的所有人)
+    topic = db.relationship("TopicModel",backref='user_subscribed') # `这条关注对应的话题('user_subscribed'代表关注话题的所有人)
 
 
 def model_to_dict(result):
@@ -213,3 +217,80 @@ def model_to_dict(result):
         print(e.args)
         raise TypeError('Type error of parameter')
 
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    target_id = db.Column(db.Integer)
+    type = db.Column(db.Integer)
+    is_read = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime,default = datetime.utcnow,index=True)
+
+    # Foreign Key
+    receiver_id = db.Column(db.String(200), ForeignKey("user.id", ondelete="CASCADE"))
+
+
+from datetime import datetime as cdatetime #有时候会返回datatime类型
+from datetime import date,time
+from sqlalchemy import DateTime,Numeric,Date,Time #有时又是DateTime
+
+
+
+def queryToDict(models):
+    if(isinstance(models,list)):
+        if(isinstance(models[0],Model)):
+            lst = []
+            for model in models:
+                gen = model_2_dict(model)
+                dit = dict((g[0],g[1]) for g in gen)
+                lst.append(dit)
+            return lst
+        else:
+            res = result_to_dict(models)
+            return res
+    else:
+        if (isinstance(models, Model)):
+            gen = model_to_dict(models)
+            dit = dict((g[0],g[1]) for g in gen)
+            return dit
+        else:
+            res = dict(zip(models.keys(), models))
+            find_datetime(res)
+            return res
+
+
+#当结果为result对象列表时，result有key()方法
+def result_to_dict(results):
+    res = [dict(zip(r.keys(), r)) for r in results]
+    #这里r为一个字典，对象传递直接改变字典属性
+    for r in res:
+        find_datetime(r)
+    return res
+
+
+def model_2_dict(model):
+    for col in model.__table__.columns:
+        if isinstance(col.type, DateTime):
+            value = convert_datetime(getattr(model, col.name))
+        elif isinstance(col.type, Numeric):
+            value = float(getattr(model, col.name))
+        else:
+            value = getattr(model, col.name)
+        yield (col.name, value)
+
+
+def find_datetime(value):
+    for v in value:
+        if (isinstance(value[v], cdatetime)):
+            value[v] = convert_datetime(value[v])   #这里原理类似，修改的字典对象，不用返回即可修改
+
+
+def convert_datetime(value):
+    if value:
+        if(isinstance(value,(cdatetime,DateTime))):
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        elif(isinstance(value,(date,Date))):
+            return value.strftime("%Y-%m-%d")
+        elif(isinstance(value,(Time,time))):
+            return value.strftime("%H:%M:%S")
+    else:
+        return ""

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # @Author  : Zijian li
 # @Time    : 2022/10/19 19:19
+import json
+
 from flask import jsonify,request
 from flask_login import login_required
 
 from . import post_bp
 import datetime
 from flask_restful import Resource,Api,marshal_with,fields
-from models import PostModel, model_to_dict, ResponseModel
+from models import PostModel, model_to_dict, ResponseModel, TopicModel,LikesModel,queryToDict
 from app.extensions import db,pagination
+from ..user.view import push_notification
 
 
 @post_bp.route('/responses/<int:post_id>',methods=['GET'])
@@ -25,7 +28,7 @@ def get_responses(post_id):
 
 @post_bp.route('/response',methods=['POST'])
 @login_required
-def response_post():
+def post_response():
     post_id = request.get_json()['post_id']
     text= request.get_json()['text']
     img_url = request.get_json()['img_url'] if 'img_url' in request.get_json() else "null"
@@ -34,6 +37,8 @@ def response_post():
     if resp:
         db.session.add(resp)
         db.session.commit()
+        user = PostModel.query.filter_by(id=post_id).first().author
+        push_notification(user,post_id,2)
         return jsonify({
             'code':200,
             'msg':'success'
@@ -50,28 +55,53 @@ def response_post():
 def collect():
     # id_list = request.form.getlist('ids')
     id_list = request.get_json()['ids']
-    print(type(id_list))
-    print(list(id_list))
     posts = []
     for id in id_list:
-        print(id)
-        # post = PostModel.query.get(id)
-        # posts.append(post)
-    return id_list
-    # return jsonify({
-    #          'code': 200,
-    #          'msg':'success',
-    #          'data': {
-    #              'post_list': model_to_dict(posts)
-    #          }
-    #      })
+        if id.isdigit():
+            post = PostModel.query.get(id)
+            if not post:
+                return jsonify({
+                         'code': 400,
+                          'msg':'post not found'
+                     })
+            posts.append(post)
+    # return posts
+    return jsonify({
+             'code': 200,
+             'msg':'success',
+             'data': {
+                 'post_list': model_to_dict(posts)
+             }
+         })
 
 
-# 项目实战
+@post_bp.route('/topic/<int:topic_id>',methods=['GET'])
+@login_required
+def get_posts_by_topic(topic_id):
+    query = PostModel.query.filter_by(topic_id=topic_id)
+    page_num = int(request.args.get('page'))
+
+    # 分页
+    totals = query.count()
+    pag = pagination(page_num, totals)
+
+    if totals != 0:
+        data = query.offset(pag["offset"]).limit(pag["page_size"]).all()
+        data = queryToDict(data)
+        # for post in data:
+        #     print(post.author.username)
+    else:
+        data = []
+    pag['data'] = data;
+    return json.dumps(data)
+
+
 @post_bp.route('/like/<int:post_id>')
 def like_number(post_id):
-    pass
-
+    post = PostModel.query.filter_by(id=post_id).first()
+    return jsonify({
+        "number": len(post.user_liked)
+    })
 
 
 # 注册topic api
@@ -90,7 +120,10 @@ class PostView(Resource):
         'img_urls':fields.String,
         'video_urls':fields.String,
         'author_id':fields.String,
-        'topic_id':fields.Integer
+        'topic_id':fields.Integer,
+        'author': fields.Nested({
+            'username': fields.String
+        })
     }
 
     @marshal_with(resource_fields)
@@ -127,8 +160,6 @@ class PostsView(Resource):
         'text':fields.String,
         'create_time':fields.DateTime,
         'update_time':fields.DateTime,
-        'img_urls':fields.String(default="None"),
-        'video_urls':fields.String(default="None"),
         'author_id':fields.String,
         'topic_id':fields.Integer,
         'author':fields.Nested({
@@ -176,6 +207,10 @@ class PostsView(Resource):
         video_urls = data['video_urls']
         author_id = data['author_id']
         post = PostModel(title = title,text=text,topic_id=topic_id,img_urls=img_urls,video_urls=video_urls,author_id=author_id)
+        record = TopicModel.query.filter_by(id=topic_id).first().user_subscribed
+        for r in record:
+            user = r.user
+            push_notification(user,post.id,1)
         db.session.add(post)
         db.session.commit()
         return jsonify({

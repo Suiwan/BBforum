@@ -7,38 +7,40 @@ from flask_login import login_required
 
 from . import topic_bp
 from flask_restful import Resource,Api,marshal_with,fields,request
-from models import TopicModel,model_to_dict
+from models import TopicModel, model_to_dict, PostModel,queryToDict
 from app.extensions import db, pagination
 
 
-@topic_bp.route('/posts/<int:topic_id>',methods=['GET'])
-@login_required
-def get_posts_by_topic(topic_id):
-    topic = TopicModel.query.filter_by(id=topic_id).first()
-    posts = model_to_dict(topic.posts)
-    return jsonify({
-        'msg':'success',
-        'code':200,
-        'data':posts
-    })
 
 
 @topic_bp.route('/type/<int:type_id>',methods=['GET'])
 @login_required
-def get_posts_by_type(type_id):
-    topics = TopicModel.query.filter_by(type_id=type_id).all()
+def get_topics_by_type(type_id):
+    query = TopicModel.query.filter_by(type_id=type_id)
+    page_num = int(request.args.get('page'))
+
+    # 分页
+    totals = query.count()
+    pag = pagination(page_num, totals)
+
+    if totals != 0:
+        data = query.offset(pag["offset"]).limit(pag["page_size"]).all()
+        data = queryToDict(data)
+        # for post in data:
+        #     print(post.author.username)
+        print(data)
+    else:
+        data = []
+    pag['data'] = data
+    return json.dumps(pag)
+
+
+@topic_bp.route('/subscription_number/<int:topic_id>')
+def subscription_number(topic_id):
+    topic = TopicModel.query.filter_by(id=topic_id).first()
     return jsonify({
-        'msg':'success',
-        'code':200,
-        'data':model_to_dict(topics)
+        "number":len(topic.user_subscribed)
     })
-
-
-# 项目实战
-@topic_bp.route('/subscription')
-def subscription_number():
-    pass
-
 
 
 # 注册topic api
@@ -83,6 +85,9 @@ class TopicView(Resource):
             'code':200,
             'msg':'update success'
         })
+
+    def post(self):
+        pass
 
 
 class TopicsView(Resource):
