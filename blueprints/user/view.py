@@ -2,8 +2,9 @@
 # @Author  : Zijian li
 # @Time    : 2022/10/19 19:08
 
-from flask import jsonify, request
+from flask import jsonify, request, Response
 from sqlalchemy import func
+from models import model_to_dict
 
 from app.extensions import db
 from . import user_bp
@@ -224,6 +225,25 @@ def test(topic_id):
         receivers.append(r.user)
     print(receivers)
     return "testing"
+
+
+@user_bp.route('/images/pic/<string:name>')
+def get_picture(name):
+    with open('static/images/'+name,'rb') as f:
+        data = f.read()
+
+        resp = Response(data,mimetype='image/jpg')
+        return resp
+
+
+# 获得词云图
+@user_bp.route('/wordcloud/<string:name>')
+def get_wordcloud(name):
+    with open('static/wc/'+name,'rb') as f:
+        data = f.read()
+
+        resp = Response(data,mimetype='image/png')
+        return resp
 
 
 user_api = Api(user_bp)
