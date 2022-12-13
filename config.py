@@ -7,8 +7,8 @@ JSON_AS_ASCII = False
 HOSTNAME ='127.0.0.1'
 PORT = '3306'
 DATABASE = 'bbforum'
-USERNAME = 'root'
-PASSWORD = 'system'
+USERNAME = '########'
+PASSWORD = '########'
 DB_URI = 'mysql+mysqlconnector://{}:{}@{}:{}/{}?charset=utf8'.format(USERNAME,PASSWORD,HOSTNAME,PORT,DATABASE)
 SQLALCHEMY_DATABASE_URI = DB_URI
 SQLALCHEMY_TRACK_MODIFICATIONS = True
